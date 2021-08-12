@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kv-deployment
+spec:
+  selector:
+    matchLabels:
+      app: kv
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 25%
+  template:
+    metadata:
+      labels:
+        app: kv
+    spec:
+      terminationGracePeriodSeconds: 160
+      containers:
+        - name: kv
+          image: sachinnicky/board:v5
+          imagePullPolicy: IfNotPresent
+          livenessProbe:
+            initialDelaySeconds: 3
+            periodSeconds: 5
+            httpGet:
+              path: /v1/healthcheck
+              port: 4000
+          readinessProbe:
+            initialDelaySeconds: 3
+            periodSeconds: 5
+            httpGet:
+              path: /v1/healthcheck
+              port: 4000
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/bash", "-c", "sleep 15"]
+          resources:
+            limits:
+              memory: "128Mi"
+              cpu: "500m"
+            requests:
+              memory: "128Mi"
+              cpu: "500m"

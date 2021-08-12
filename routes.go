@@ -19,9 +19,9 @@ var (
 	keys = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "total_keys_kv",
-			Help: "Total keys in kv store",
+			Help: "total keys in kv store",
 		},
-		[]string{"keys"},
+		[]string{"totalKeys"},
 	)
 )
 
@@ -31,8 +31,6 @@ func init() {
 
 func (app *application) routes() http.Handler {
 	router := mux.NewRouter()
-	// reg := prometheus.NewRegistry()
-	// keys.WithLabelValues("keys").Set(float64(app.getTotalKeys()))
 
 	router.Use(app.prometheusMiddleware)
 	router.HandleFunc("/healthcheck", app.healthcheckHandler)
@@ -66,7 +64,7 @@ func (app *application) prometheusMiddleware(next http.Handler) http.Handler {
 		path, _ := route.GetPathTemplate()
 		rw := NewResponseWriter(w)
 		next.ServeHTTP(rw, r)
-		keys.WithLabelValues("keys").Set(float64(app.db.Total()))
+		keys.WithLabelValues("kv").Set(float64(app.db.Total()))
 
 		statusCode := rw.statusCode
 		timer := prometheus.NewTimer(httpDuration.WithLabelValues(path, r.Method, strconv.Itoa(statusCode)))

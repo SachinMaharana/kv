@@ -3,9 +3,8 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"math/rand"
+	"log"
 	"net/http"
-	"time"
 
 	"github.com/go-redis/redis"
 	"github.com/golang/gddo/httputil/header"
@@ -13,7 +12,6 @@ import (
 )
 
 func (app *application) healthcheckHandler(w http.ResponseWriter, r *http.Request) {
-	time.Sleep(time.Duration(rand.Int63n(10)) * time.Microsecond)
 	fmt.Fprintln(w, "status: available")
 }
 
@@ -27,6 +25,7 @@ func (app *application) getKey(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
+		log.Println(err)
 		http.Error(w, http.StatusText(500), 500)
 		return
 	}
@@ -50,6 +49,7 @@ func (app *application) search(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
 	}
+
 	var searchKey string
 	if prefix != "" {
 		searchKey = fmt.Sprintf("%s*", prefix)
@@ -80,13 +80,11 @@ func (app *application) setKey(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-
 	err := json.NewDecoder(r.Body).Decode(&d)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-
 	err = app.db.Set(d.Key, d.Value)
 
 	if err != nil {
@@ -95,9 +93,4 @@ func (app *application) setKey(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusOK)
 
-}
-
-func (app *application) getTotalKeys() int {
-	keys := app.db.Total()
-	return keys
 }

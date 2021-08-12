@@ -35,6 +35,8 @@ func NewRedisRepository(Client redis.Cmdable) Repository {
 }
 
 func (r *repository) Set(key string, value interface{}) error {
+	log.Println("SET", key)
+
 	return r.Client.Set(key, value, 0).Err()
 }
 

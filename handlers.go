@@ -3,15 +3,27 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"log"
+	"math/rand"
 	"net/http"
+	"time"
 
 	"github.com/go-redis/redis"
 	"github.com/golang/gddo/httputil/header"
 	"github.com/gorilla/mux"
 )
 
+type Payload struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
+}
+
+type KeysResponse struct {
+	Keys []string `json:"keys"`
+}
+
 func (app *application) healthcheckHandler(w http.ResponseWriter, r *http.Request) {
+	ra := rand.Intn(10)
+	time.Sleep(time.Duration(ra) * time.Microsecond)
 	fmt.Fprintln(w, "status: available")
 }
 
@@ -25,20 +37,11 @@ func (app *application) getKey(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		log.Println(err)
-		http.Error(w, http.StatusText(500), 500)
+		app.logger.Println(err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 	fmt.Fprintf(w, "%s\n", val)
-}
-
-type Data struct {
-	Key   string `json:"key"`
-	Value string `json:"value"`
-}
-
-type KeysResponse struct {
-	Keys []string `json:"keys"`
 }
 
 func (app *application) search(w http.ResponseWriter, r *http.Request) {
@@ -65,13 +68,13 @@ func (app *application) search(w http.ResponseWriter, r *http.Request) {
 	var p KeysResponse
 	p.Keys = keys
 
+	// what should be the return response?
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(p)
 }
 
 func (app *application) setKey(w http.ResponseWriter, r *http.Request) {
-	var d Data
-
+	var p Payload
 	if r.Header.Get("Content-Type") != "" {
 		value, _ := header.ParseValueAndParams(r.Header, "Content-Type")
 		if value != "application/json" {
@@ -80,17 +83,17 @@ func (app *application) setKey(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	err := json.NewDecoder(r.Body).Decode(&d)
+	err := json.NewDecoder(r.Body).Decode(&p)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	err = app.db.Set(d.Key, d.Value)
-
+	// TODO: Check for existence in db?
+	err = app.db.Set(p.Key, p.Value)
 	if err != nil {
-		http.Error(w, http.StatusText(500), 500)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
+	// keys.WithLabelValues("redis").Set(float64(app.db.TotalKeys()))
 	w.WriteHeader(http.StatusOK)
-
 }

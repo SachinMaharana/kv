@@ -12,31 +12,41 @@ import (
 
 var (
 	httpDuration = promauto.NewHistogramVec(prometheus.HistogramOpts{
-		Name: "kv",
+		Name: "kv_http_duration_seconds",
 		Help: "Duration of HTTP requests.",
 	}, []string{"path", "method", "code"})
 
-	keys = prometheus.NewGaugeVec(
+	keys = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "total_keys_kv",
 			Help: "total keys in kv store",
 		},
-		[]string{"totalKeys"},
+		[]string{"kv"},
+	)
+	totalRequests = promauto.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "http_requests_total",
+			Help: "Number of get requests.",
+		},
+		[]string{"path"},
+	)
+	responseStatus = promauto.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "response_status",
+			Help: "Status of HTTP response",
+		},
+		[]string{"status", "path"},
 	)
 )
-
-func init() {
-	prometheus.Register(keys)
-}
 
 func (app *application) routes() http.Handler {
 	router := mux.NewRouter()
 
 	router.Use(app.prometheusMiddleware)
-	router.HandleFunc("/healthcheck", app.healthcheckHandler)
-	router.HandleFunc("/search", app.search)
-	router.HandleFunc("/get/{key}", app.getKey)
+	router.HandleFunc("/healthcheck", app.healthcheckHandler).Methods("GET")
+	router.HandleFunc("/get/{key}", app.getKey).Methods("GET")
 	router.HandleFunc("/set", app.setKey).Methods("POST")
+	router.HandleFunc("/search", app.search).Methods("GET")
 	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 	})
@@ -64,11 +74,13 @@ func (app *application) prometheusMiddleware(next http.Handler) http.Handler {
 		path, _ := route.GetPathTemplate()
 		rw := NewResponseWriter(w)
 		next.ServeHTTP(rw, r)
-		keys.WithLabelValues("kv").Set(float64(app.db.Total()))
-
 		statusCode := rw.statusCode
-		timer := prometheus.NewTimer(httpDuration.WithLabelValues(path, r.Method, strconv.Itoa(statusCode)))
 
+		responseStatus.WithLabelValues(strconv.Itoa(statusCode), path).Inc()
+		// TODO: best place to put this?
+		totalRequests.WithLabelValues(path).Inc()
+		keys.WithLabelValues("redis").Set(float64(app.db.TotalKeys()))
+		timer := prometheus.NewTimer(httpDuration.WithLabelValues(path, r.Method, strconv.Itoa(statusCode)))
 		timer.ObserveDuration()
 	})
 }

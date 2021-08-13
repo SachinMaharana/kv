@@ -28,7 +28,7 @@ type application struct {
 		Get(string) (string, error)
 		Set(string, interface{}) error
 		Search(string) ([]string, error)
-		Total() int
+		TotalKeys() int
 	}
 }
 
@@ -37,14 +37,17 @@ func main() {
 
 	flag.IntVar(&cfg.port, "port", 4000, "API server port")
 
-	flag.StringVar(&cfg.db.dsn, "db-dsn", "my-release-redis-master.default.svc.cluster.local:6379", "Redis DSN")
+	flag.StringVar(&cfg.db.dsn, "db-dsn", "redis-db-master.default.svc.cluster.local:6379", "Redis DSN")
 	flag.Parse()
 
 	logger := log.New(os.Stdout, "", log.Ldate|log.Ltime)
 
 	client, err := createClient(cfg)
+	if err != nil {
+		logger.Fatal(err)
+	}
 
-	db := db.NewRedisRepository(client)
+	db := db.NewRedisStore(client)
 
 	app := &application{
 		config: cfg,
@@ -52,10 +55,7 @@ func main() {
 		db:     db,
 	}
 
-	if err != nil {
-		logger.Fatal(err)
-	}
-
+	// graceful shutdown
 	shutdown := make(chan os.Signal, 1)
 	signal.Notify(shutdown, syscall.SIGINT, syscall.SIGTERM)
 
@@ -83,10 +83,11 @@ func main() {
 }
 
 func createClient(cfg config) (*redis.Client, error) {
+	password := os.Getenv("REDIS_PASSWORD")
 	client := redis.NewClient(&redis.Options{
-		Addr: cfg.db.dsn,
-		// Password: "cQ2FfYrN2E",
-		DB: 0,
+		Addr:     cfg.db.dsn,
+		Password: password,
+		DB:       0,
 	})
 	if err := client.Ping().Err(); err != nil {
 		return nil, err

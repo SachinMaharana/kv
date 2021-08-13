@@ -6,7 +6,7 @@ spec:
   selector:
     matchLabels:
       app: kv
-  replicas: 3
+  replicas: 1
   strategy:
     type: RollingUpdate
     rollingUpdate:
@@ -20,19 +20,25 @@ spec:
       terminationGracePeriodSeconds: 160
       containers:
         - name: kv
-          image: sachinnicky/board:v5
+          image: sachinnicky/kv:v5
+          env:
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: redis-db
+                  key: redis-password
           imagePullPolicy: IfNotPresent
           livenessProbe:
             initialDelaySeconds: 3
             periodSeconds: 5
             httpGet:
-              path: /v1/healthcheck
+              path: /healthcheck
               port: 4000
           readinessProbe:
             initialDelaySeconds: 3
             periodSeconds: 5
             httpGet:
-              path: /v1/healthcheck
+              path: /healthcheck
               port: 4000
           lifecycle:
             preStop:
@@ -45,3 +51,19 @@ spec:
             requests:
               memory: "128Mi"
               cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    prometheus.io/scrape: "true"
+  name: kv-service
+spec:
+  ports:
+    - port: 4000
+      protocol: TCP
+      targetPort: 4000
+  selector:
+    app: kv
+  sessionAffinity: None
+  type: ClusterIP

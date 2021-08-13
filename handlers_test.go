@@ -48,7 +48,7 @@ func (m *db_test) Set(key string, value interface{}) error {
 		return errors.New("error in setting")
 	}
 }
-func (m *db_test) Total() int {
+func (m *db_test) TotalKeys() int {
 	return 4
 }
 

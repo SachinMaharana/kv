@@ -76,7 +76,7 @@ grafana-access:
     -@echo "Probable IP: Grafana is at:`curl icanhazip.com`:8080"
     echo "User: admin , Password: $(kubectl get secret graff-grafana-admin --namespace default -o jsonpath="{.data.GF_SECURITY_ADMIN_PASSWORD}" | base64 --decode)"
 
-risk-it-all: docker cluster cluster-up helm prom grafana app ingress seed grafana-access
+risk-it-all: cluster cluster-up helm prom grafana app ingress seed grafana-access
 
 
 

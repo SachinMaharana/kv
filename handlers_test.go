@@ -13,9 +13,9 @@ import (
 	"github.com/go-redis/redis"
 )
 
-type db_test struct{}
+type db_mock struct{}
 
-func (m *db_test) Get(key string) (string, error) {
+func (m *db_mock) Get(key string) (string, error) {
 	switch key {
 	case "abc-1":
 		return "yes", nil
@@ -25,7 +25,7 @@ func (m *db_test) Get(key string) (string, error) {
 		return "", errors.New("Internal Error")
 	}
 }
-func (m *db_test) Search(key string) ([]string, error) {
+func (m *db_mock) Search(key string) ([]string, error) {
 	switch key {
 	case "abc*":
 		return []string{"abc-1", "abc-2"}, nil
@@ -40,7 +40,7 @@ func (m *db_test) Search(key string) ([]string, error) {
 	}
 }
 
-func (m *db_test) Set(key string, value interface{}) error {
+func (m *db_mock) Set(key string, value interface{}) error {
 	switch key {
 	case "xyz-4":
 		return nil
@@ -48,7 +48,7 @@ func (m *db_test) Set(key string, value interface{}) error {
 		return errors.New("error in setting")
 	}
 }
-func (m *db_test) TotalKeys() int {
+func (m *db_mock) TotalKeys() int {
 	return 4
 }
 
@@ -56,7 +56,7 @@ func newTestApplication(t *testing.T) *application {
 	return &application{
 		config: config{},
 		logger: log.New(ioutil.Discard, "", 0),
-		db:     &db_test{},
+		db:     &db_mock{},
 	}
 }
 
@@ -98,7 +98,7 @@ func (ts *testServer) post(t *testing.T, urlPath string, payload string) (int, h
 	return rs.StatusCode, rs.Header, body
 }
 
-func TestPing(t *testing.T) {
+func TestHealth(t *testing.T) {
 	app := newTestApplication(t)
 	ts := newTestServer(t, app.routes())
 	defer ts.Close()
@@ -149,6 +149,7 @@ func TestSet(t *testing.T) {
 		wantCode int
 	}{
 		{"set key", "/set", `{"key":"xyz-4", "value":"f"}`, http.StatusOK},
+		{"set key without payload", "/set", ``, http.StatusBadRequest},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

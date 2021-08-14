@@ -3,9 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"math/rand"
 	"net/http"
-	"time"
 
 	"github.com/go-redis/redis"
 	"github.com/golang/gddo/httputil/header"
@@ -22,8 +20,6 @@ type KeysResponse struct {
 }
 
 func (app *application) healthcheckHandler(w http.ResponseWriter, r *http.Request) {
-	ra := rand.Intn(10)
-	time.Sleep(time.Duration(ra) * time.Microsecond)
 	fmt.Fprintln(w, "status: available")
 }
 

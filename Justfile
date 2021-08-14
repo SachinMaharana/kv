@@ -1,3 +1,5 @@
+cluster_name := "toggle"
+
 cluster-up:
     kind create cluster --name {{cluster_name}} --image kindest/node:v1.19.1  --config ./kind-config.yaml
     sleep "10"

@@ -5,8 +5,8 @@
 ```
 {
     curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh | bash -s -- --to ~/
-    mv ./just /usr/local/bin
-    just --verision
+    mv ~/just /usr/local/bin
+    just --version
 }
 ```
 

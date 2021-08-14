@@ -1,0 +1,15 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: ingress-test
+  annotations:
+    kubernetes.io/ingress.class: traefik
+spec:
+  rules:
+    - host: kv-api.com
+      http:
+        paths:
+          - path: /
+            backend:
+              serviceName: kv-service
+              servicePort: 4000

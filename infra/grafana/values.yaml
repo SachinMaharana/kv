@@ -5,6 +5,9 @@ dashboardsConfigMaps:
   - configMapName: mydashboard
     filename: grafana.yaml
 
+image:
+  tag: 8.1.1-debian-10-r0
+
 ## Create datasources from a custom secret
 ## The secret must contain the files
 ##

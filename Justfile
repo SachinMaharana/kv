@@ -32,10 +32,10 @@ cluster-up:
     
 helm:
     curl https://baltocdn.com/helm/signing.asc | sudo apt-key add -
-    apt-get install apt-transport-https --yes
-    echo "deb https://baltocdn.com/helm/stable/debian/ all main" | tee /etc/apt/sources.list.d/helm-stable-debian.list
-    apt-get update
-    apt-get install helm
+    sudo apt-get install apt-transport-https --yes
+    echo "deb https://baltocdn.com/helm/stable/debian/ all main" | sudo tee /etc/apt/sources.list.d/helm-stable-debian.list
+    sudo apt-get update
+    sudo apt-get install helm
 
     @echo Adding Repos
     helm repo add bitnami https://charts.bitnami.com/bitnami
@@ -49,9 +49,6 @@ grafana:
     -kubectl create secret generic datasource --from-file=datasource.yaml
     -kubectl create configmap mydashboard --from-file=grafana.json
     -helm install graff bitnami/grafana -f grafana/values.yaml
-    echo "User: admin , Password: $(kubectl get secret graff-grafana-admin --namespace default -o jsonpath="{.data.GF_SECURITY_ADMIN_PASSWORD}" | base64 --decode)"
-    @echo enabling port-forward
-
 
 app:
     -helm install redis-db bitnami/redis
@@ -68,9 +65,6 @@ ingress:
     kubectl wait --namespace kube-system --for=condition=ready pod --selector="k8s-app=traefik-ingress-lb" --timeout=180s
     kubectl apply -f traefik-service.yaml
     kubectl apply -f ingress.yaml
-    -kubectl port-forward --address 0.0.0.0 svc/graff-grafana 8080:3000 > /dev/null 2>&1 &
-
-
 
 seed:
    #!/bin/bash
@@ -78,10 +72,11 @@ seed:
 
     
 grafana-access:
+    -kubectl port-forward --address 0.0.0.0 svc/graff-grafana 8080:3000 > /dev/null 2>&1 &
     -@echo "Probable IP: Grafana is at:`curl icanhazip.com`:8080"
     echo "User: admin , Password: $(kubectl get secret graff-grafana-admin --namespace default -o jsonpath="{.data.GF_SECURITY_ADMIN_PASSWORD}" | base64 --decode)"
 
-risk-it-all: docker cluster-up helm prom grafana app ingress seed grafana-access
+risk-it-all: docker cluster cluster-up helm prom grafana app ingress seed grafana-access
 
 
 

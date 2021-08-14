@@ -23,7 +23,7 @@ cluster-up:
     echo "deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee /etc/apt/sources.list.d/kubernetes.list
     sudo apt-get update
     sudo apt-get install -y kubectl
-    -kind create cluster --name {{cluster_name}} --image kindest/node:v1.19.1  --config ./kind-config.yaml
+    -kind create cluster --name {{cluster_name}} --image kindest/node:v1.19.1  --config ./infra/kind-config.yaml
     sleep "10"
     kubectl wait --namespace kube-system --for=condition=ready pod --selector="tier=control-plane" --timeout=180s
     kubectl apply -f https://docs.projectcalico.org/v3.8/manifests/calico.yaml
@@ -46,15 +46,15 @@ prom:
     -helm install prom prometheus-community/prometheus -f prometheus/values.yaml
 
 grafana:
-    -kubectl create secret generic datasource --from-file=datasource.yaml
-    -kubectl create configmap mydashboard --from-file=grafana.json
-    -helm install graff bitnami/grafana -f grafana/values.yaml
+    -kubectl create secret generic datasource --from-file=infra/datasource.yaml
+    -kubectl create configmap mydashboard --from-file=infra/grafana.json
+    -helm install graff bitnami/grafana -f infra/grafana/values.yaml
 
 app:
     -helm install --set replica.replicaCount=1 redis-db bitnami/redis 
     sleep "5"
     kubectl wait --namespace default --for=condition=ready pod --selector="app.kubernetes.io/instance=redis-db" --timeout=180s
-    -kubectl apply -f deployment.yaml
+    -kubectl apply -f infra/deployment.yaml
     sleep "5"
     kubectl wait --namespace default --for=condition=ready pod --selector="app=kv" --timeout=180s
     
@@ -63,18 +63,19 @@ ingress:
     kubectl apply -f https://raw.githubusercontent.com/containous/traefik/v1.7/examples/k8s/traefik-ds.yaml
     sleep "5"
     kubectl wait --namespace kube-system --for=condition=ready pod --selector="k8s-app=traefik-ingress-lb" --timeout=180s
-    kubectl apply -f traefik-service.yaml
-    kubectl apply -f ingress.yaml
+    kubectl apply -f infra/traefik-service.yaml
+    kubectl apply -f infra/ingress.yaml
 
 seed:
    #!/bin/bash
    for i in {1..50}; do curl -s -H "Host: kv-api.com" -i -X POST -H "Content-Type: application/json" -d "{\"key\":\"xyz-$i\", \"value\":\"val-$i\"}" http://localhost:30100/set; done
     
 grafana-access:
+    #!/bin/sh
     kubectl port-forward --address 0.0.0.0 svc/graff-grafana 9000:3000 > /dev/null 2>&1 &
-    @echo "Grafana is at:PUBLIC_IP:9000"
+    echo "Grafana is at:PUBLIC_IP:9000"
     curl icanhazip.com
-    @echo "User: admin , Password: $(kubectl get secret graff-grafana-admin --namespace default -o jsonpath="{.data.GF_SECURITY_ADMIN_PASSWORD}" | base64 --decode)"
+    echo "User: admin , Password: $(kubectl get secret graff-grafana-admin --namespace default -o jsonpath="{.data.GF_SECURITY_ADMIN_PASSWORD}" | base64 --decode)"
 
 # run docker before as it requires relogin
 all: cluster cluster-up helm prom grafana app ingress seed grafana-access

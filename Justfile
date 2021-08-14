@@ -25,6 +25,7 @@ cluster-up:
     sleep "10"
     kubectl wait --namespace kube-system --for=condition=ready pod --selector="tier=control-plane" --timeout=180s
     kubectl apply -f https://docs.projectcalico.org/v3.8/manifests/calico.yaml
+    sleep "10"
     kubectl wait --namespace kube-system --for=condition=ready pod --selector="k8s-app=calico-node" --timeout=180s
     
 helm:
@@ -48,29 +49,37 @@ grafana:
     -helm install graff bitnami/grafana -f grafana/values.yaml
     echo "User: admin , Password: $(kubectl get secret graff-grafana-admin --namespace default -o jsonpath="{.data.GF_SECURITY_ADMIN_PASSWORD}" | base64 --decode)"
     @echo enabling port-forward
-    -kubectl port-forward --address 0.0.0.0 svc/graff-grafana 8080:3000 > 2>&1 &
 
 
 app:
     -helm install redis-db bitnami/redis
+    sleep "5"
     kubectl wait --namespace default --for=condition=ready pod --selector="app.kubernetes.io/instance=redis-db" --timeout=180s
     -kubectl apply -f deployment.yaml
+    sleep "5"
     kubectl wait --namespace default --for=condition=ready pod --selector="app=kv" --timeout=180s
     
 ingress:
     kubectl apply -f https://raw.githubusercontent.com/containous/traefik/v1.7/examples/k8s/traefik-rbac.yaml
     kubectl apply -f https://raw.githubusercontent.com/containous/traefik/v1.7/examples/k8s/traefik-ds.yaml
+    sleep "5"
     kubectl wait --namespace kube-system --for=condition=ready pod --selector="k8s-app=traefik-ingress-lb" --timeout=180s
     kubectl apply -f traefik-service.yaml
     kubectl apply -f ingress.yaml
+    -kubectl port-forward --address 0.0.0.0 svc/graff-grafana 8080:3000 > /dev/null 2>&1 &
+
 
 
 seed:
    #!/bin/bash
-   for i in {6..10}; do curl -s -H "Host: kv-api.com" -i -X POST -H "Content-Type: application/json" -d "{\"key\":\"xy-$i\", \"value\":\"val-$i\"}" http://localhost:30100/set; done
+   for i in {1..50}; do curl -s -H "Host: kv-api.com" -i -X POST -H "Content-Type: application/json" -d "{\"key\":\"xy-$i\", \"value\":\"val-$i\"}" http://localhost:30100/set; done
 
     
-risk-it-all: docker cluster-up helm prom grafana app ingress seed
+grafana-access:
+    -@echo "Probable IP: Grafana is at:`curl icanhazip.com`:8080"
+    echo "User: admin , Password: $(kubectl get secret graff-grafana-admin --namespace default -o jsonpath="{.data.GF_SECURITY_ADMIN_PASSWORD}" | base64 --decode)"
+
+risk-it-all: docker cluster-up helm prom grafana app ingress seed grafana-pass
 
 
 

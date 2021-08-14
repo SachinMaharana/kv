@@ -43,7 +43,7 @@ helm:
     helm repo update
 
 prom:
-    -helm install prom prometheus-community/prometheus -f prometheus/values.yaml
+    helm install prom prometheus-community/prometheus -f infra/prometheus/values.yaml
 
 grafana:
     -kubectl create secret generic datasource --from-file=infra/datasource.yaml

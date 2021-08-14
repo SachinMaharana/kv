@@ -1,26 +1,28 @@
 cluster_name := "toggle"
 
 docker:
-    apt update
-    apt install -y apt-transport-https ca-certificates curl gnupg-agent software-properties-common
+    sudo apt update
+    sudo apt install -y apt-transport-https ca-certificates curl gnupg-agent software-properties-common
     curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
-    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add -
     echo \
     "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu \
     $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-    apt update
-    apt install -y docker-ce docker-ce-cli containerd.io
+    sudo apt update
+    sudo apt install -y docker-ce docker-ce-cli containerd.io
+    sudo usermod -aG docker ${USER}
+    sudo systemctl restart docker
+    newgrp docker
 
 cluster:
     curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.11.1/kind-linux-amd64
     chmod +x ./kind
-    mv ./kind /usr/local/bin
+    sudo mv ./kind /usr/local/bin
 
 cluster-up:
-    curl -fsSLo /usr/share/keyrings/kubernetes-archive-keyring.gpg https://packages.cloud.google.com/apt/doc/apt-key.gpg
+    sudo curl -fsSLo /usr/share/keyrings/kubernetes-archive-keyring.gpg https://packages.cloud.google.com/apt/doc/apt-key.gpg
     echo "deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee /etc/apt/sources.list.d/kubernetes.list
-    apt-get update
-    apt-get install -y kubectl
+    sudo apt-get update
+    sudo apt-get install -y kubectl
     -kind create cluster --name {{cluster_name}} --image kindest/node:v1.19.1  --config ./kind-config.yaml
     sleep "10"
     kubectl wait --namespace kube-system --for=condition=ready pod --selector="tier=control-plane" --timeout=180s
@@ -79,7 +81,7 @@ grafana-access:
     -@echo "Probable IP: Grafana is at:`curl icanhazip.com`:8080"
     echo "User: admin , Password: $(kubectl get secret graff-grafana-admin --namespace default -o jsonpath="{.data.GF_SECURITY_ADMIN_PASSWORD}" | base64 --decode)"
 
-risk-it-all: docker cluster-up helm prom grafana app ingress seed grafana-pass
+risk-it-all: docker cluster-up helm prom grafana app ingress seed grafana-access
 
 
 

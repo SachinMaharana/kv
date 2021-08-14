@@ -69,6 +69,9 @@ ingress:
 seed:
    #!/bin/bash
    for i in {1..50}; do curl -s -H "Host: kv-api.com" -i -X POST -H "Content-Type: application/json" -d "{\"key\":\"xyz-$i\", \"value\":\"val-$i\"}" http://localhost:30100/set; done
+#  curl -s -H "Host: kv-api.com" http://localhost:30100/get/xyz-2  
+#  curl -s -H "Host: kv-api.com" 'http://localhost:30100/search?suffix=-2'
+
     
 grafana-access:
     #!/bin/sh

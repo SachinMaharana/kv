@@ -1,6 +1,8 @@
 # KV
 
-## Install Just
+A Justfile task runner is provided to manage this repo.
+
+### Install Just task Runner
 
 ```
 {
@@ -10,39 +12,39 @@
 }
 ```
 
-```
-kind create cluster --config kind-config.yaml --name toggle
+### Steps
 
-kubectl apply -f https://docs.projectcalico.org/v3.8/manifests/calico.yaml
-
-helm install prom prometheus-community/prometheus -f prometheus/values.yaml
-```
+_This was tested in an ubuntu box in ec2 instance with port 9000 exposed for grafana._
 
 ```
-kubectl create secret generic datasource --from-file=datasource.yaml
-kubectl create configmap mydashboard --from-file=grafana.json
-helm install graff bitnami/grafana -f grafana/values.yaml
-kubectl port-forward svc/graff-grafana 8080:3000 &
-echo "Password: $(kubectl get secret graff-grafana-admin --namespace default -o jsonpath="{.data.GF_SECURITY_ADMIN_PASSWORD}" | base64 --decode)"
-
+# installs docker
+just docker
 ```
 
 ```
-helm install redis-db bitnami/redis
+# istalls a local k8s cluster
+just cluster
 
-k apply -f deployment.yaml
-```
+just cluster-up
 
-```
-kubectl apply -f https://raw.githubusercontent.com/containous/traefik/v1.7/examples/k8s/traefik-rbac.yaml
+# installs helm repos required
+just helm
 
-kubectl apply -f https://raw.githubusercontent.com/containous/traefik/v1.7/examples/k8s/traefik-ds.yaml
+# setups prometheus
+just prom
 
-kubectl apply -f traefik-service.yaml
+# setups grafana with preconfigured datasource and dashboards
+just grafana
 
-kubectl apply -f ingress.yaml
-```
+# setups the api
+just app
 
-```
-for i in {6..10}; do curl -s -H "Host: kv-api.com" -i -X POST -H "Content-Type: application/json" -d "{\"key\":\"xy-$i\", \"value\":\"val-$i\"}" http://localhost:30100/set; done
+# installs and setups the ingress
+just ingress
+
+# adds key-value into db
+just seed
+
+# access grafana using public ip
+just grafana-access
 ```

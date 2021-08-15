@@ -1,6 +1,6 @@
 # KV
 
-A Justfile task runner is provided to manage this repo.
+A task runner is provided to manage this repo.
 
 ### Install Just task Runner
 
@@ -14,7 +14,7 @@ A Justfile task runner is provided to manage this repo.
 
 ### Steps
 
-_This was tested in an ubuntu box in ec2 instance with port 9000 exposed for grafana._
+_This was tested in an ubuntu box(18.04) ec2 instance with port 9000 exposed for grafana._
 
 ```
 # installs docker

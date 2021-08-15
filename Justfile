@@ -1,5 +1,7 @@
 cluster_name := "toggle"
 
+
+# installs docker and kubectl
 docker:
     sudo apt update
     sudo apt install -y apt-transport-https ca-certificates curl gnupg-agent software-properties-common
@@ -11,18 +13,19 @@ docker:
     sudo apt install -y docker-ce docker-ce-cli containerd.io
     sudo usermod -aG docker ${USER}
     sudo systemctl restart docker
+    sudo curl -fsSLo /usr/share/keyrings/kubernetes-archive-keyring.gpg https://packages.cloud.google.com/apt/doc/apt-key.gpg
+    echo "deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee /etc/apt/sources.list.d/kubernetes.list
+    sudo apt-get update
+    sudo apt-get install -y kubectl
     newgrp docker
 
+# installs kind cluster
 cluster:
     curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.11.1/kind-linux-amd64
     chmod +x ./kind
     sudo mv ./kind /usr/local/bin
 
 cluster-up:
-    sudo curl -fsSLo /usr/share/keyrings/kubernetes-archive-keyring.gpg https://packages.cloud.google.com/apt/doc/apt-key.gpg
-    echo "deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee /etc/apt/sources.list.d/kubernetes.list
-    sudo apt-get update
-    sudo apt-get install -y kubectl
     -kind create cluster --name {{cluster_name}} --image kindest/node:v1.19.1  --config ./infra/kind-config.yaml
     sleep "10"
     kubectl wait --namespace kube-system --for=condition=ready pod --selector="tier=control-plane" --timeout=180s
@@ -85,7 +88,6 @@ all: cluster cluster-up helm prom grafana app ingress seed grafana-access
 
 
 
-# hey -n 10 -c 2 -m POST -T "application/json" -d "{\"key\":\"xy-$i\", \"value\":\"val-$i\"}" http://localhost:30100/set
-# hey -n 10 -c 2 -m POST -T "application/x-www-form-urlencoded" -d 'username=1&message=hello' http://your-rest-url/resource
+
 # loadtest -c 10 --rps 4 -H "Host: kv-api.com" http://localhost:30100/get/xyz-6
 # loadtest -c 10 --rps 200 -T "application/json" -m POST -d '{\"key\":\"xy-$i\", \"value\":\"val-$i\"}' -H "Host: kv-api.com" http://localhost:30100/set

@@ -85,4 +85,7 @@ all: cluster cluster-up helm prom grafana app ingress seed grafana-access
 
 
 
-
+# hey -n 10 -c 2 -m POST -T "application/json" -d "{\"key\":\"xy-$i\", \"value\":\"val-$i\"}" http://localhost:30100/set
+# hey -n 10 -c 2 -m POST -T "application/x-www-form-urlencoded" -d 'username=1&message=hello' http://your-rest-url/resource
+# loadtest -c 10 --rps 4 -H "Host: kv-api.com" http://localhost:30100/get/xyz-6
+# loadtest -c 10 --rps 200 -T "application/json" -m POST -d '{\"key\":\"xy-$i\", \"value\":\"val-$i\"}' -H "Host: kv-api.com" http://localhost:30100/set

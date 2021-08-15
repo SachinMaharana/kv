@@ -20,7 +20,7 @@ spec:
       terminationGracePeriodSeconds: 160
       containers:
         - name: kv
-          image: sachinnicky/kv:v9
+          image: sachinnicky/kvapi:v6
           env:
             - name: REDIS_PASSWORD
               valueFrom:
